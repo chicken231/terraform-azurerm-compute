@@ -163,6 +163,7 @@ resource "azurerm_public_ip" "vm" {
 }
 
 resource "azurerm_network_security_group" "vm" {
+  count               = var.remote_port != "" ? 1 : 0
   name                = "${var.vm_hostname}-nsg"
   resource_group_name = data.azurerm_resource_group.vm.name
   location            = coalesce(var.location, data.azurerm_resource_group.vm.location)
@@ -183,7 +184,7 @@ resource "azurerm_network_security_rule" "vm" {
   destination_port_range      = coalesce(var.remote_port, module.os.calculated_remote_port)
   source_address_prefixes     = var.source_address_prefixes
   destination_address_prefix  = "*"
-  network_security_group_name = azurerm_network_security_group.vm.name
+  network_security_group_name = azurerm_network_security_group.vm[0].name
 }
 
 resource "azurerm_network_interface" "vm" {
@@ -204,7 +205,7 @@ resource "azurerm_network_interface" "vm" {
 }
 
 resource "azurerm_network_interface_security_group_association" "test" {
-  count                     = var.nb_instances
+  count                     = var.remote_port != "" ? var.nb_instances : 0
   network_interface_id      = azurerm_network_interface.vm[count.index].id
-  network_security_group_id = azurerm_network_security_group.vm.id
+  network_security_group_id = azurerm_network_security_group.vm[0].id
 }
